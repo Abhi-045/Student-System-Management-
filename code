@@ -1,0 +1,175 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+
+using namespace std;
+
+class Student {
+public:
+    int id;
+    string name;
+    int age;
+    string course;
+
+    void getData() {
+        cout << "Enter Student ID: ";
+        cin >> id;
+        cout << "Enter Student Name: ";
+        cin.ignore();
+        getline(cin, name);
+        cout << "Enter Student Age: ";
+        cin >> age;
+        cout << "Enter Student Course: ";
+        cin.ignore();
+        getline(cin, course);
+    }
+
+    void displayData() const {
+        cout << left << setw(10) << id << setw(20) << name << setw(10) << age << setw(20) << course << endl;
+    }
+};
+
+class StudentManagementSystem {
+private:
+    vector<Student> students;
+
+    void saveToFile() {
+        ofstream file("students.dat", ios::binary | ios::trunc);
+        if (!file) {
+            cerr << "Error opening file for saving!" << endl;
+            return;
+        }
+        for (const auto &student : students) {
+            file.write(reinterpret_cast<const char*>(&student), sizeof(Student));
+        }
+        file.close();
+    }
+
+    void loadFromFile() {
+        ifstream file("students.dat", ios::binary);
+        if (!file) {
+            cerr << "Error opening file for loading!" << endl;
+            return;
+        }
+        Student student;
+        while (file.read(reinterpret_cast<char*>(&student), sizeof(Student))) {
+            students.push_back(student);
+        }
+        file.close();
+    }
+
+public:
+    StudentManagementSystem() {
+        loadFromFile();
+    }
+
+    ~StudentManagementSystem() {
+        saveToFile();
+    }
+
+    void addStudent() {
+        Student student;
+        student.getData();
+        students.push_back(student);
+        saveToFile();
+    }
+
+    void displayStudents() const {
+        if (students.empty()) {
+            cout << "No students available." << endl;
+            return;
+        }
+        cout << left << setw(10) << "ID" << setw(20) << "Name" << setw(10) << "Age" << setw(20) << "Course" << endl;
+        cout << "----------------------------------------------------------" << endl;
+        for (const auto &student : students) {
+            student.displayData();
+        }
+    }
+
+    void updateStudent() {
+        int id;
+        cout << "Enter the ID of the student to update: ";
+        cin >> id;
+        auto it = find_if(students.begin(), students.end(), [id](const Student &s) { return s.id == id; });
+        if (it != students.end()) {
+            cout << "Enter new details for the student:" << endl;
+            it->getData();
+            saveToFile();
+        } else {
+            cout << "Student not found." << endl;
+        }
+    }
+
+    void deleteStudent() {
+        int id;
+        cout << "Enter the ID of the student to delete: ";
+        cin >> id;
+        auto it = remove_if(students.begin(), students.end(), [id](const Student &s) { return s.id == id; });
+        if (it != students.end()) {
+            students.erase(it, students.end());
+            cout << "Student deleted successfully." << endl;
+            saveToFile();
+        } else {
+            cout << "Student not found." << endl;
+        }
+    }
+
+    void searchStudent() const {
+        int id;
+        cout << "Enter the ID of the student to search: ";
+        cin >> id;
+        auto it = find_if(students.begin(), students.end(), [id](const Student &s) { return s.id == id; });
+        if (it != students.end()) {
+            it->displayData();
+        } else {
+            cout << "Student not found." << endl;
+        }
+    }
+};
+
+void displayMenu() {
+    cout << "\nStudent Management System\n";
+    cout << "1. Add Student\n";
+    cout << "2. Display Students\n";
+    cout << "3. Update Student\n";
+    cout << "4. Delete Student\n";
+    cout << "5. Search Student\n";
+    cout << "6. Exit\n";
+    cout << "Enter your choice: ";
+}
+
+int main() {
+    StudentManagementSystem sms;
+    int choice;
+
+    while (true) {
+        displayMenu();
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                sms.addStudent();
+                break;
+            case 2:
+                sms.displayStudents();
+                break;
+            case 3:
+                sms.updateStudent();
+                break;
+            case 4:
+                sms.deleteStudent();
+                break;
+            case 5:
+                sms.searchStudent();
+                break;
+            case 6:
+                exit(0);
+            default:
+                cout << "Invalid choice. Please try again." << endl;
+        }
+    }
+
+    return 0;
+}
